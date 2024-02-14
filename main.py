@@ -16,10 +16,28 @@ class Line:
 
     """
 
+    class Group:
+        def __init__(self, start=None, end=None, length=None, clue=None):
+            if length is None:
+                self.start = start
+                self.end = end
+                self.length = end - start + 1
+            elif start is None:
+                self.start = end - length + 1
+                self.end = end
+                self.length = length
+            elif end is None:
+                self.start = start
+                self.end = length - start - 1
+                self.length = length
+            self.clue = clue
+
     def __init__(self, length: int, clues: list[int]):
         self.length = length
-        self.clues = clues
         self.cells = [0] * length
+        self.clues = clues
+        self.groups = []
+        self.solved_clues = [False * len(clues)]
 
     def write_cells(self, cells):
         self.cells = cells
@@ -103,6 +121,59 @@ class Line:
         self.add_cross_at_beginning_group()
         self.add_cross_at_end_group()
 
+    def surround_single_clue_with_crosses(self):
+        if len(self.clues) > 1:
+            return
+        group_start = None
+        group_end = None
+        for i, cell in enumerate(self.cells):
+            if cell == 1:
+                group_end = i
+                if group_start is None:
+                    group_start = i
+        if group_start is None:
+            return
+        group_len = group_end - group_start + 1
+        padding = self.clues[0] - group_len
+        for i in range(len(self.cells)):
+            if group_start - i > padding or i - group_end > padding:
+                self.cells[i] = -1
+
+    def get_box_groups(self):
+        groups = []
+        group_len = 0
+        for i, cell in enumerate(self.cells):
+            if cell == 0 and group_len > 0:
+                group = self.Group(end=i-1, length=group_len)
+                groups.append(group)
+                group_len = 0
+            if cell == 1:
+                group_len += 1
+        if group_len > 0:
+            group = self.Group(end=self.length-1, length=group_len)
+            groups.append(group)
+        return groups
+
+    def is_solved(self):
+        if [group.length for group in self.get_box_groups()] == self.clues:
+            for i in range(len(self.cells)):
+                if self.cells[i] == 0:
+                    self.cells[i] = -1
+            return True
+        else:
+            return False
+
+    def surround_max_size_groups_with_crosses(self):
+        groups = self.get_box_groups()
+        max_len_clue = max(self.clues)
+        for group in groups:
+            if group.length == max_len_clue:
+                if group.start-1 >= 0:
+                    self.cells[group.start-1] = -1
+                if group.end+1 < self.length:
+                    self.cells[group.end+1] = -1
+
+
 
 class Game:
 
@@ -113,8 +184,14 @@ class Game:
         self.column_clues = column_clues
         self.rows = [Line(width, row_clue) for row_clue in row_clues]
         self.columns = [Line(height, column_clue) for column_clue in column_clues]
-        self.board = [[0] * width for i in range(height)]
+        self.board = [[0] * width for _ in range(height)]
         self.lines = self.rows + self.columns
+
+    def get_row(self, n):
+        return self.rows[n]
+
+    def get_column(self, n):
+        return self.columns[n]
 
     def print_board(self):
         pieces = {
@@ -167,6 +244,16 @@ class Game:
             line.add_crosses_at_edge_groups()
         self.update()
 
+    def surround_single_clues_with_crosses(self):
+        for line in self.lines:
+            line.surround_single_clue_with_crosses()
+        self.update()
+
+    def surround_max_size_groups_with_crosses(self):
+        for line in self.lines:
+            line.surround_max_size_groups_with_crosses()
+        self.update()
+
 
 if __name__ == "__main__":
     n = 15
@@ -209,4 +296,6 @@ if __name__ == "__main__":
     game.fill_start_clues()
     game.fill_edge_clues()
     game.add_crosses_at_edge_groups()
+    game.surround_single_clues_with_crosses()
+    game.surround_max_size_groups_with_crosses()
     game.print_board()
