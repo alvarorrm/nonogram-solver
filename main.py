@@ -139,6 +139,8 @@ class Line:
     #### STRATEGIES ####
     def solve_step(self):
         """ Try all the strategies once """
+        if self.is_solved():
+            return
         debug = False
         if debug: print("STARTING STATE:                                      ", self.cells, "Clues:", self.clues)
         self.fill_start_clues()
@@ -172,7 +174,7 @@ class Line:
         self.solve_edge_groups_if_only_edge_clues_fit()
         if debug: print("After solve_edge_groups_if_only_edge_clues_fit:     ", self.cells, "Clues:", self.clues)
         # self.pad_edge_groups_if_only_two_clues_fit()
-        if debug: print("After pad_edge_groups_if_only_two_clues_fit:     ", self.cells, "Clues:", self.clues)
+        # if debug: print("After pad_edge_groups_if_only_two_clues_fit:     ", self.cells, "Clues:", self.clues)
 
 
     def solve(self):
@@ -720,7 +722,7 @@ def run_game_history(game_history_path):
     return row_clues, column_clues
 
 def generate_random_clues(width, height):
-    board = [[random.random()<0.5 for j in range(width)] for i in range(height)]
+    board = [[random.random()<0.3 for j in range(width)] for i in range(height)]
     row_clues = []
     for i in range(height):
         line = Line(width, [])
@@ -742,13 +744,54 @@ def generate_random_clues(width, height):
 
 if __name__ == "__main__":
 
-    width = 10
-    height = 10
+    width = 15
+    height = 20
 
-    row_clues, column_clues, solution = generate_random_clues(width, height)
+    # row_clues, column_clues, solution = generate_random_clues(width, height)
+
+    row_clues = [
+        [7],
+        [7],
+        [1, 1, 1, 1],
+        [3, 3],
+        [3, 3],
+        [2, 1, 1, 2],
+        [3, 3],
+        [9],
+        [7],
+        [2, 2],
+        [2, 3],
+        [6, 1],
+        [2, 2, 3],
+        [4, 3, 1],
+        [2, 3, 1, 3],
+        [3, 1, 5],
+        [4, 5],
+        [4, 5],
+        [1, 1, 1, 1],
+        [1, 1, 1, 1]
+    ]
+
+    column_clues = [
+        [4],
+        [7],
+        [3, 2, 3],
+        [4, 1, 4, 4],
+        [2, 2, 3, 2, 3],
+        [3, 8, 1],
+        [2, 4, 2],
+        [2, 2, 2],
+        [2, 6, 1],
+        [3, 6, 3],
+        [2, 2, 3, 3, 3],
+        [4, 1, 1, 6],
+        [3, 5],
+        [6],
+        [3]
+    ]
 
     game = Game(row_clues, column_clues)
-    game.board = solution
+    # game.board = solution
     game.update_lines()
     if game.is_solved():
         print("THE PUZZLE HAS A SOLUTION")
