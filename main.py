@@ -9,6 +9,7 @@ import json
 import sys
 import random
 
+
 class Line:
     """ Class that represents a line of a nonogram
 
@@ -56,6 +57,13 @@ class Line:
                 + "Cells: " + str(self.cells)
             )
             return group_string
+
+        def __eq__(self, other):
+            if self.start != other.start:
+                return False
+            if self.end != other.end:
+                return False
+            return True
 
         def has_boxes(self):
             return any([cell == 1 for cell in self.cells])
@@ -173,6 +181,8 @@ class Line:
         if debug: print("After fill_if_solved:                                ", self.cells, "Clues:", self.clues)
         self.solve_edge_groups_if_only_edge_clues_fit()
         if debug: print("After solve_edge_groups_if_only_edge_clues_fit:     ", self.cells, "Clues:", self.clues)
+        self.solve_subline_if_matched_clue()
+        if debug: print("After solve_subline_if_matched_clue:                ", self.cells, "Clues:", self.clues)
         # self.pad_edge_groups_if_only_two_clues_fit()
         # if debug: print("After pad_edge_groups_if_only_two_clues_fit:     ", self.cells, "Clues:", self.clues)
 
@@ -467,6 +477,26 @@ class Line:
         self.pad_first_group_if_only_two_clues_fit()
         self.pad_last_group_if_only_two_clues_fit()
 
+    def solve_subline_if_matched_clue(self):
+        groups = self.get_groups_between_crosses()
+        matches = {}
+        for group in groups:
+            if group.is_full() and sum([clue == group.length for clue in self.clues]) == 1:
+                clue_ix = self.clues.index(group.length)
+                matches[clue_ix] = group
+        for clue_ix, group in matches.items():
+            if group.start > 1:
+                subline = Line(group.start-1, self.clues[:clue_ix])
+                subline.cells = self.cells[:group.start-1]
+                subline.solve()
+                self.cells[:group.start-1] = subline.cells
+            if group.end < self.length - 2:
+                subline = Line(self.length - group.end - 2, self.clues[clue_ix+1:])
+                subline.cells = self.cells[group.end+2:]
+                subline.solve()
+                self.cells[group.end+2:] = subline.cells
+
+
 
 
 class Game:
@@ -722,7 +752,7 @@ def run_game_history(game_history_path):
     return row_clues, column_clues
 
 def generate_random_clues(width, height):
-    board = [[random.random()<0.3 for j in range(width)] for i in range(height)]
+    board = [[random.random()<0.5 for j in range(width)] for i in range(height)]
     row_clues = []
     for i in range(height):
         line = Line(width, [])
@@ -745,60 +775,61 @@ def generate_random_clues(width, height):
 if __name__ == "__main__":
 
     width = 15
-    height = 20
+    height = 15
 
-    # row_clues, column_clues, solution = generate_random_clues(width, height)
+    row_clues, column_clues, solution = generate_random_clues(width, height)
 
-    row_clues = [
-        [7],
-        [7],
-        [1, 1, 1, 1],
-        [3, 3],
-        [3, 3],
-        [2, 1, 1, 2],
-        [3, 3],
-        [9],
-        [7],
-        [2, 2],
-        [2, 3],
-        [6, 1],
-        [2, 2, 3],
-        [4, 3, 1],
-        [2, 3, 1, 3],
-        [3, 1, 5],
-        [4, 5],
-        [4, 5],
-        [1, 1, 1, 1],
-        [1, 1, 1, 1]
-    ]
+    # row_clues = [
+    #     [7],
+    #     [7],
+    #     [1, 1, 1, 1],
+    #     [3, 3],
+    #     [3, 3],
+    #     [2, 1, 1, 2],
+    #     [3, 3],
+    #     [9],
+    #     [7],
+    #     [2, 2],
+    #     [2, 3],
+    #     [6, 1],
+    #     [2, 2, 3],
+    #     [4, 3, 1],
+    #     [2, 3, 1, 3],
+    #     [3, 1, 5],
+    #     [4, 5],
+    #     [4, 5],
+    #     [1, 1, 1, 1],
+    #     [1, 1, 1, 1]
+    # ]
+    # print(sum([sum(clue) for clue in row_clues])/(width*height))
+    #
+    # column_clues = [
+    #     [4],
+    #     [7],
+    #     [3, 2, 3],
+    #     [4, 1, 4, 4],
+    #     [2, 2, 3, 2, 3],
+    #     [3, 8, 1],
+    #     [2, 4, 2],
+    #     [2, 2, 2],
+    #     [2, 6, 1],
+    #     [3, 6, 3],
+    #     [2, 2, 3, 3, 3],
+    #     [4, 1, 1, 6],
+    #     [3, 5],
+    #     [6],
+    #     [3]
+    # ]
 
-    column_clues = [
-        [4],
-        [7],
-        [3, 2, 3],
-        [4, 1, 4, 4],
-        [2, 2, 3, 2, 3],
-        [3, 8, 1],
-        [2, 4, 2],
-        [2, 2, 2],
-        [2, 6, 1],
-        [3, 6, 3],
-        [2, 2, 3, 3, 3],
-        [4, 1, 1, 6],
-        [3, 5],
-        [6],
-        [3]
-    ]
-
-    game = Game(row_clues, column_clues)
+    # game = Game(row_clues, column_clues)
     # game.board = solution
-    game.update_lines()
-    if game.is_solved():
-        print("THE PUZZLE HAS A SOLUTION")
-    else:
-        print("INCORRECT PUZZLE")
-        game.print_game()
-        sys.exit
+    # game.update_lines()
+    # if game.is_solved():
+    #     print("THE PUZZLE HAS A SOLUTION")
+    # else:
+    #     print("INCORRECT PUZZLE")
+    #     game.print_game()
+    #     sys.exit()
     game = Game(row_clues, column_clues)
     game.solve()
     game.print_game()
@@ -806,14 +837,3 @@ if __name__ == "__main__":
         print("CORRECT")
     else:
         print("INCORRECT")
-
-
-
-    # line = game.get_column(-2)
-    # groups = line.get_groups_between_crosses()
-    # for i, group in enumerate(groups):
-    #     print("-"*20)
-    #     print("Group", i)
-    #     print(group)
-    # row_clue = [1, 12, 1, 1]
-    # print(len(" ".join([str(clue) for clue in row_clue])))
