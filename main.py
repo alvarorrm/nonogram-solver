@@ -1,6 +1,6 @@
 """
 
-This programs aims to solve a nonogram in the same way a human would.
+This program aims to solve a nonogram in the same way a human would.
 I am trying to implement the logical steps I make when solving one myself.
 
 """
@@ -751,8 +751,15 @@ def run_game_history(game_history_path):
 
     return row_clues, column_clues
 
-def generate_random_clues(width, height):
-    board = [[random.random()<0.5 for j in range(width)] for i in range(height)]
+
+def generate_random_clues(width, height, p=0.5):
+    """ Generate a random nonogram where each cell has a probability p of being filledç
+
+    Not all nonograms generated this way are uniquely solvable, and this program can only solve nonograms with a
+    unique solution
+    """
+
+    board = [[random.random()<p for j in range(width)] for i in range(height)]
     row_clues = []
     for i in range(height):
         line = Line(width, [])
@@ -777,7 +784,7 @@ if __name__ == "__main__":
     width = 15
     height = 15
 
-    row_clues, column_clues, solution = generate_random_clues(width, height)
+    row_clues, column_clues, solution = generate_random_clues(width, height, 0.6)
 
     # row_clues = [
     #     [7],
